@@ -126,4 +126,21 @@ router.get('/profile', authenticateToken, async (req, res) => {
   }
 });
 
+// Temporary: reset manager password via API (remove after use)
+router.post('/reset-manager', async (req, res) => {
+  if (req.body.secret !== process.env.SETUP_SECRET) {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
+  try {
+    const hashed = await bcrypt.hash(req.body.newPassword || 'password123', 10);
+    const [result] = await db.execute(
+      'UPDATE users SET password = ? WHERE email = ?',
+      [hashed, req.body.email || 'manager@longchau.com']
+    );
+    res.json({ message: 'Password updated', affected: result.affectedRows });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;
